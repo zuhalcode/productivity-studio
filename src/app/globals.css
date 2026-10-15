@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #f8fafc;
+  --surface: #ffffff;
+  --surface-elevated: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --brand: #2563eb;
+  --brand-hover: #1d4ed8;
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  /* Funnel semantic tokens */
+  --funnel-engagement-bg: #ecfdf5;
+  --funnel-engagement-text: #065f46;
+  --funnel-authority-bg: #eff6ff;
+  --funnel-authority-text: #1e40af;
+  --funnel-sales-bg: #fffbeb;
+  --funnel-sales-text: #92400e;
+}
+
+.dark {
+  --canvas: #09090b;
+  --surface: #18181b;
+  --surface-elevated: #27272a;
+  --border-subtle: #27272a;
+  --border-strong: #3f3f46;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --brand: #3b82f6;
+  --brand-hover: #2563eb;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* Funnel semantic tokens in Dark Mode */
+  --funnel-engagement-bg: #064e3b;
+  --funnel-engagement-text: #a7f3d0;
+  --funnel-authority-bg: #1e3a8a;
+  --funnel-authority-text: #bfdbfe;
+  --funnel-sales-bg: #78350f;
+  --funnel-sales-text: #fde68a;
+}
+
+@theme {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-funnel-engagement-bg: var(--funnel-engagement-bg);
+  --color-funnel-engagement-text: var(--funnel-engagement-text);
+  --color-funnel-authority-bg: var(--funnel-authority-bg);
+  --color-funnel-authority-text: var(--funnel-authority-text);
+  --color-funnel-sales-bg: var(--funnel-sales-bg);
+  --color-funnel-sales-text: var(--funnel-sales-text);
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--text-primary);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
