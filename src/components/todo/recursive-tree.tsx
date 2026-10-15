@@ -27,7 +27,6 @@ import {
   Calendar,
   Clock,
   AlertCircle,
-  FileText,
   Search,
   X,
   MoreHorizontal,
@@ -516,19 +515,6 @@ export function RecursiveTree({
           </span>
         )}
 
-        {/* Indikator Catatan Tugas (Jika ada catatan) */}
-        {Boolean(node.notes && node.notes.trim()) && (
-          <button
-            type="button"
-            onClick={() => openEditModal(node)}
-            title={node.notes || "Lihat catatan"}
-            className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-          >
-            <FileText className="w-3 h-3 shrink-0" />
-            <span>Catatan</span>
-          </button>
-        )}
-
         {/* Badge Tingkat Kedalaman jika >= 2 di mobile */}
         {node.depth >= 2 && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[var(--surface-elevated)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
@@ -545,11 +531,19 @@ export function RecursiveTree({
       </div>
     );
 
+    const hasMobileBadges =
+      dueDateStatus !== "none" ||
+      (!node.due_date && Boolean(node.start_date)) ||
+      node.depth >= 2 ||
+      isArchived;
+
+    const hasMetadata = !node.is_leaf || hasMobileBadges;
+
     return (
       <div key={node.id} className="relative group">
         {/* Row Container */}
         <div
-          className={`flex items-start sm:items-center justify-between gap-2 p-2.5 sm:px-3 sm:py-2.5 rounded-xl border transition-all ${
+          className={`p-2.5 sm:px-3 sm:py-2.5 rounded-xl border transition-all ${
             isArchived
               ? "opacity-50 bg-[var(--surface-elevated)] border-dashed border-[var(--border-subtle)]"
               : node.effective_completed
@@ -563,57 +557,57 @@ export function RecursiveTree({
             marginLeft: `${Math.min(node.depth, 3) * 10}px`,
           }}
         >
-          {/* Sisi Kiri: Collapse Icon + Checkbox/Progress Ring + Title & Metadata */}
-          <div className="flex items-start sm:items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-            {/* Chevron Kolapsibel */}
-            {hasChildren ? (
-              <button
-                type="button"
-                onClick={() => toggleCollapse(node.id)}
-                aria-label={isCollapsed ? `Buka sub-tugas ${node.title}` : `Tutup sub-tugas ${node.title}`}
-                className="w-6 h-6 flex items-center justify-center rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] transition-colors shrink-0 mt-0.5 sm:mt-0"
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-            ) : (
-              <div className="w-6 shrink-0" />
-            )}
-
-            {/* Checkbox (Daun) vs CircularProgress (Induk) */}
-            <div className="shrink-0 mt-0.5 sm:mt-0">
-              {node.is_leaf ? (
+          {/* Row 1: Task controls, title, and actions */}
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            {/* Sisi Kiri: Collapse Icon + Checkbox/Progress Ring + Title */}
+            <div className="flex items-start gap-2 sm:gap-2.5 min-w-0 flex-1">
+              {/* Chevron Kolapsibel */}
+              {hasChildren ? (
                 <button
                   type="button"
-                  onClick={() => handleToggleLeaf(node)}
-                  disabled={isArchived}
-                  aria-label={`Tandai selesai: ${node.title}`}
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand)] ${
-                    node.is_completed
-                      ? "bg-emerald-600 border-emerald-600 text-white"
-                      : "border-[var(--border-strong)] hover:border-[var(--brand)] bg-[var(--surface)]"
-                  }`}
+                  onClick={() => toggleCollapse(node.id)}
+                  aria-label={isCollapsed ? `Buka sub-tugas ${node.title}` : `Tutup sub-tugas ${node.title}`}
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] transition-colors shrink-0 mt-0.5"
                 >
-                  {node.is_completed && <span className="text-xs font-bold leading-none">✓</span>}
+                  {isCollapsed ? (
+                    <ChevronRight className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
                 </button>
               ) : (
-                <CircularProgress
-                  progress={node.progress}
-                  onClick={() => handleParentClick(node)}
-                  title={`Induk: ${node.progress}% (Rata-rata cabang). Klik untuk opsi.`}
-                />
+                <div className="w-6 shrink-0" />
               )}
-            </div>
 
-            {/* Title & Derived Info */}
-            <div className="flex flex-col min-w-0 flex-1">
-              {/* Line 1: Task Title (Natural wrapping on mobile with break-words, no arbitrary truncation) */}
-              <div className="flex items-start sm:items-center gap-2 flex-wrap sm:flex-nowrap min-w-0">
+              {/* Checkbox (Daun) vs CircularProgress (Induk) */}
+              <div className="shrink-0 mt-0.5">
+                {node.is_leaf ? (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleLeaf(node)}
+                    disabled={isArchived}
+                    aria-label={`Tandai selesai: ${node.title}`}
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand)] ${
+                      node.is_completed
+                        ? "bg-emerald-600 border-emerald-600 text-white"
+                        : "border-[var(--border-strong)] hover:border-[var(--brand)] bg-[var(--surface)]"
+                    }`}
+                  >
+                    {node.is_completed && <span className="text-xs font-bold leading-none">✓</span>}
+                  </button>
+                ) : (
+                  <CircularProgress
+                    progress={node.progress}
+                    onClick={() => handleParentClick(node)}
+                    title={`Induk: ${node.progress}% (Rata-rata cabang). Klik untuk opsi.`}
+                  />
+                )}
+              </div>
+
+              {/* Task Title & Desktop Inline Badges */}
+              <div className="flex items-start sm:items-center gap-2 flex-wrap sm:flex-nowrap min-w-0 flex-1 mt-0.5 sm:mt-0">
                 <span
-                  className={`text-xs sm:text-sm font-medium leading-relaxed sm:leading-normal break-words sm:truncate flex-1 min-w-0 ${
+                  className={`text-xs sm:text-sm font-medium leading-relaxed sm:leading-normal break-words flex-1 min-w-0 ${
                     node.effective_completed
                       ? "line-through text-[var(--text-muted)]"
                       : "text-[var(--text-primary)]"
@@ -622,199 +616,217 @@ export function RecursiveTree({
                   {node.title}
                 </span>
 
-                {/* Badges on Desktop (sitting inline) */}
+                {/* Badges on Desktop (sitting inline on Row 1) */}
                 {renderBadges(false)}
               </div>
-
-              {/* Line 2 on Mobile: Secondary Metadata (Date pill, Notes indicator, Lvl, Archived) */}
-              {renderBadges(true)}
-
-              {/* Sub-label untuk Induk: Menampilkan fakta rata-rata cabang */}
-              {!node.is_leaf && (
-                <span className="text-[10px] sm:text-[11px] text-[var(--text-muted)] mt-0.5">
-                  🔒 {node.progress}% (dari {node.children.filter((c) => !c.is_archived).length} sub-tugas aktif)
-                </span>
-              )}
             </div>
-          </div>
 
-          {/* Sisi Kanan: Aksi (Desktop: 5 tombol cepat; Mobile: + dan overflow menu •••) */}
-          <div className="flex items-center gap-1 shrink-0 mt-0.5 sm:mt-0">
-            {/* DESKTOP ACTIONS: Tetap 5 tombol cepat saat hover */}
-            <div className="hidden sm:flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-              {/* Tombol Tambah Sub-tugas */}
-              <button
-                type="button"
-                onClick={() => openAddModal(node.id)}
-                aria-label="Tambah Sub-tugas"
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
-                title="Tambah Sub-tugas"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+            {/* Sisi Kanan: Aksi (Desktop: 5 tombol cepat; Mobile: + dan overflow menu •••) */}
+            <div className="flex items-center gap-1 shrink-0 mt-0.5 sm:mt-0">
+              {/* DESKTOP ACTIONS: Tetap 5 tombol cepat saat hover */}
+              <div className="hidden sm:flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                {/* Tombol Tambah Sub-tugas */}
+                <button
+                  type="button"
+                  onClick={() => openAddModal(node.id)}
+                  aria-label="Tambah Sub-tugas"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                  title="Tambah Sub-tugas"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
 
-              {/* Tombol Fokus Subtree (jika punya anak) */}
-              {hasChildren && (
+                {/* Tombol Fokus Subtree (jika punya anak) */}
+                {hasChildren && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFocusedBranchId(focusedBranchId === node.id ? null : node.id)
+                    }
+                    aria-label="Fokus Cabang Ini"
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                    title="Fokus Cabang Ini"
+                  >
+                    {focusedBranchId === node.id ? (
+                      <Minimize2 className="w-4 h-4" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+
+                {/* Tombol Edit */}
+                <button
+                  type="button"
+                  onClick={() => openEditModal(node)}
+                  aria-label="Edit Tugas & Catatan"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] transition-colors"
+                  title="Edit Detail, Tanggal & Catatan"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Tombol Arsip */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleArchive(node)}
+                  aria-label={isArchived ? "Batalkan Arsip" : "Arsipkan Tugas"}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
+                  title={isArchived ? "Keluarkan dari Arsip" : "Arsipkan (Keluarkan dari kalkulasi)"}
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Tombol Hapus */}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteTask(node)}
+                  aria-label="Hapus Tugas"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  title="Hapus Tugas"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* MOBILE ACTIONS: 2 target sentuh nyaman (>= 32px) dengan overflow menu ••• */}
+              <div className="flex sm:hidden items-center gap-1 relative">
+                {/* Tombol Tambah Cepat (+) */}
+                <button
+                  type="button"
+                  onClick={() => openAddModal(node.id)}
+                  aria-label={`Tambah sub-tugas di bawah ${node.title}`}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-900/60 active:scale-95 transition-transform"
+                  title="Tambah Sub-tugas"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+
+                {/* Tombol Menu Overflow (•••) */}
                 <button
                   type="button"
                   onClick={() =>
-                    setFocusedBranchId(focusedBranchId === node.id ? null : node.id)
+                    setActiveMobileMenuTaskId(activeMobileMenuTaskId === node.id ? null : node.id)
                   }
-                  aria-label="Fokus Cabang Ini"
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
-                  title="Fokus Cabang Ini"
+                  aria-label={`Menu aksi lainnya untuk ${node.title}`}
+                  aria-expanded={activeMobileMenuTaskId === node.id}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] bg-[var(--surface-elevated)] border border-[var(--border-subtle)] active:scale-95 transition-transform"
+                  title="Aksi Lainnya"
                 >
-                  {focusedBranchId === node.id ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
+                  <MoreHorizontal className="w-4 h-4" />
                 </button>
-              )}
 
-              {/* Tombol Edit */}
-              <button
-                type="button"
-                onClick={() => openEditModal(node)}
-                aria-label="Edit Tugas & Catatan"
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] transition-colors"
-                title="Edit Detail, Tanggal & Catatan"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Tombol Arsip */}
-              <button
-                type="button"
-                onClick={() => handleToggleArchive(node)}
-                aria-label={isArchived ? "Batalkan Arsip" : "Arsipkan Tugas"}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
-                title={isArchived ? "Keluarkan dari Arsip" : "Arsipkan (Keluarkan dari kalkulasi)"}
-              >
-                <Archive className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Tombol Hapus */}
-              <button
-                type="button"
-                onClick={() => handleDeleteTask(node)}
-                aria-label="Hapus Tugas"
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                title="Hapus Tugas"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* MOBILE ACTIONS: 2 target sentuh nyaman (>= 32px) dengan overflow menu ••• */}
-            <div className="flex sm:hidden items-center gap-1 relative">
-              {/* Tombol Tambah Cepat (+) */}
-              <button
-                type="button"
-                onClick={() => openAddModal(node.id)}
-                aria-label={`Tambah sub-tugas di bawah ${node.title}`}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-900/60 active:scale-95 transition-transform"
-                title="Tambah Sub-tugas"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-
-              {/* Tombol Menu Overflow (•••) */}
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveMobileMenuTaskId(activeMobileMenuTaskId === node.id ? null : node.id)
-                }
-                aria-label={`Menu aksi lainnya untuk ${node.title}`}
-                aria-expanded={activeMobileMenuTaskId === node.id}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] bg-[var(--surface-elevated)] border border-[var(--border-subtle)] active:scale-95 transition-transform"
-                title="Aksi Lainnya"
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </button>
-
-              {/* Dropdown Menu Aksi Mobile */}
-              {activeMobileMenuTaskId === node.id && (
-                <>
-                  {/* Backdrop tak kasat mata untuk menutup saat klik luar */}
-                  <div
-                    className="fixed inset-0 z-30"
-                    onClick={() => setActiveMobileMenuTaskId(null)}
-                  />
-                  <div
-                    role="menu"
-                    aria-orientation="vertical"
-                    className="absolute right-0 top-9 z-40 w-48 py-1.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl animate-in zoom-in-95 duration-150"
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setActiveMobileMenuTaskId(null);
-                        openEditModal(node);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] active:bg-[var(--surface-elevated)] transition-colors"
+                {/* Dropdown Menu Aksi Mobile */}
+                {activeMobileMenuTaskId === node.id && (
+                  <>
+                    {/* Backdrop tak kasat mata untuk menutup saat klik luar */}
+                    <div
+                      className="fixed inset-0 z-30"
+                      onClick={() => setActiveMobileMenuTaskId(null)}
+                    />
+                    <div
+                      role="menu"
+                      aria-orientation="vertical"
+                      className="absolute right-0 top-9 z-40 w-48 py-1.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-2xl animate-in zoom-in-95 duration-150"
                     >
-                      <Edit2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span>Edit Detail & Jadwal</span>
-                    </button>
-
-                    {hasChildren && (
                       <button
                         type="button"
                         role="menuitem"
                         onClick={() => {
                           setActiveMobileMenuTaskId(null);
-                          setFocusedBranchId(focusedBranchId === node.id ? null : node.id);
+                          openEditModal(node);
                         }}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] active:bg-[var(--surface-elevated)] transition-colors"
                       >
-                        {focusedBranchId === node.id ? (
-                          <>
-                            <Minimize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                            <span>Keluar Mode Fokus</span>
-                          </>
-                        ) : (
-                          <>
-                            <Maximize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                            <span>Fokus Cabang Ini</span>
-                          </>
-                        )}
+                        <Edit2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Edit Detail & Jadwal</span>
                       </button>
-                    )}
 
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setActiveMobileMenuTaskId(null);
-                        handleToggleArchive(node);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] active:bg-[var(--surface-elevated)] transition-colors"
-                    >
-                      <Archive className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span>{isArchived ? "Batalkan Arsip" : "Arsipkan Tugas"}</span>
-                    </button>
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setActiveMobileMenuTaskId(null);
+                            setFocusedBranchId(focusedBranchId === node.id ? null : node.id);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] active:bg-[var(--surface-elevated)] transition-colors"
+                        >
+                          {focusedBranchId === node.id ? (
+                            <>
+                              <Minimize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Keluar Mode Fokus</span>
+                            </>
+                          ) : (
+                            <>
+                              <Maximize2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              <span>Fokus Cabang Ini</span>
+                            </>
+                          )}
+                        </button>
+                      )}
 
-                    <div className="my-1 border-t border-[var(--border-subtle)]" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setActiveMobileMenuTaskId(null);
+                          handleToggleArchive(node);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] active:bg-[var(--surface-elevated)] transition-colors"
+                      >
+                        <Archive className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span>{isArchived ? "Batalkan Arsip" : "Arsipkan Tugas"}</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setActiveMobileMenuTaskId(null);
-                        handleDeleteTask(node);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:bg-rose-50 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                      <span>Hapus Tugas</span>
-                    </button>
-                  </div>
-                </>
-              )}
+                      <div className="my-1 border-t border-[var(--border-subtle)]" />
+
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setActiveMobileMenuTaskId(null);
+                          handleDeleteTask(node);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-left font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:bg-rose-50 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                        <span>Hapus Tugas</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Row 2: Inline Notes (Displayed directly beneath task title, spanning full remaining width) */}
+          {Boolean(node.notes && node.notes.trim()) && (
+            <div className="pl-[60px] sm:pl-[64px] pr-1 sm:pr-2 pt-1 min-w-0">
+              <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-zinc-400 whitespace-pre-line break-words leading-relaxed font-normal">
+                {node.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Row 3: Secondary Metadata (Due date status, Lvl, Child-task progress, Archived) */}
+          {hasMetadata && (
+            <div
+              className={`pl-[60px] sm:pl-[64px] pt-1 items-center gap-2 flex-wrap min-w-0 ${
+                node.is_leaf ? "flex sm:hidden" : "flex"
+              }`}
+            >
+              {/* Mobile Badges (Due date status, Lvl, Archived) */}
+              {renderBadges(true)}
+
+              {/* Sub-label untuk Induk: Menampilkan fakta rata-rata cabang */}
+              {!node.is_leaf && (
+                <span className="text-[10px] sm:text-[11px] text-[var(--text-muted)] font-medium">
+                  🔒 {node.progress}% ({node.children.filter((c) => !c.is_archived).length} sub-tugas aktif)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Anak-anak Bersarang (Render jika tidak di-collapse) */}
