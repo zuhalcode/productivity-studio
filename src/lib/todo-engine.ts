@@ -206,7 +206,7 @@ export function validateTaskMove(
 /**
  * Operasi Cascading Complete: Menandai seluruh daun di bawah node menjadi complete.
  */
-export function cascadeCompleteTask(tasks: TaskItem[], parentId: string): TaskItem[] {
+export function cascadeCompleteTask<T extends TaskItem>(tasks: T[], parentId: string): T[] {
   const childrenMap = new Map<string, string[]>();
   for (const t of tasks) {
     if (t.parent_id) {
@@ -237,7 +237,7 @@ export function cascadeCompleteTask(tasks: TaskItem[], parentId: string): TaskIt
 /**
  * Operasi Cascading Reopen (Resolusi F-02): Membuka kembali seluruh sub-tugas di bawah node.
  */
-export function cascadeReopenTask(tasks: TaskItem[], parentId: string): TaskItem[] {
+export function cascadeReopenTask<T extends TaskItem>(tasks: T[], parentId: string): T[] {
   const childrenMap = new Map<string, string[]>();
   for (const t of tasks) {
     if (t.parent_id) {

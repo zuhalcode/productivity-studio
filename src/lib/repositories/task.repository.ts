@@ -103,6 +103,20 @@ export class TaskRepository {
       throw normalizeSupabaseError(error, "Gagal menghapus tugas");
     }
   }
+
+  /**
+   * Menghapus seluruh tugas dari basis data Supabase.
+   */
+  async deleteAllTasks(): Promise<void> {
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (error) {
+      throw normalizeSupabaseError(error, "Gagal mengosongkan daftar tugas");
+    }
+  }
 }
 
 export const taskRepository = new TaskRepository();

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { taskService } from "@/lib/services/task.service";
-import { TaskItem, TaskNode, buildTaskTree } from "@/lib/todo-engine";
+import { TaskItem } from "@/types/database";
+import { TaskNode, buildTaskTree } from "@/lib/todo-engine";
 import { normalizeSupabaseError } from "@/lib/supabase/errors";
 
 export function useTasks() {
@@ -150,6 +151,36 @@ export function useTasks() {
     }
   };
 
+  const deleteAllTasks = async (): Promise<void> => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      await taskService.deleteAllTasks();
+      setTasks([]);
+    } catch (err: unknown) {
+      const appErr = normalizeSupabaseError(err, "Gagal mengosongkan daftar tugas");
+      setError(appErr.message);
+      throw appErr;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const loadDefaultTasks = async (): Promise<void> => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const created = await taskService.initializeDefaultTasks();
+      setTasks(created);
+    } catch (err: unknown) {
+      const appErr = normalizeSupabaseError(err, "Gagal memuat tugas default");
+      setError(appErr.message);
+      throw appErr;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     tasks,
     taskTree,
@@ -163,6 +194,8 @@ export function useTasks() {
     cascadeComplete,
     cascadeReopen,
     deleteTask,
+    deleteAllTasks,
+    loadDefaultTasks,
     refetch: fetchTasks,
   };
 }

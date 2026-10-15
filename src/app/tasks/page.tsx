@@ -1,10 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useTasks } from "@/hooks/use-tasks";
 import { RecursiveTree } from "@/components/todo/recursive-tree";
-import { CheckSquare, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  CheckSquare,
+  RefreshCw,
+  Loader2,
+  AlertCircle,
+  Trash2,
+  Sparkles,
+} from "lucide-react";
 
 export default function BatchTasksPage() {
   const {
@@ -19,7 +27,12 @@ export default function BatchTasksPage() {
     cascadeComplete,
     cascadeReopen,
     deleteTask,
+    deleteAllTasks,
+    loadDefaultTasks,
   } = useTasks();
+
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
+
 
   return (
     <AppShell>
@@ -39,13 +52,36 @@ export default function BatchTasksPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {isSaving && (
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 animate-in fade-in flex items-center gap-1.5">
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 animate-in fade-in flex items-center gap-1.5 mr-2">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 <span>Menyimpan ke Supabase...</span>
               </span>
             )}
+
+            {tasks.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsConfirmClearOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors"
+                title="Hapus seluruh tugas dari basis data Supabase"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Kosongkan Semua</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={loadDefaultTasks}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors"
+                title="Muat contoh batch sprint default"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Muat Template Sprint</span>
+              </button>
+            )}
+
             <div className="px-3.5 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-xs font-bold text-[var(--text-secondary)]">
               {tasks.length} Total Tugas
             </div>
@@ -81,6 +117,21 @@ export default function BatchTasksPage() {
             onUpdateTask={updateTask}
           />
         )}
+
+        {/* Dialog Konfirmasi Kosongkan Semua Tugas */}
+        <ConfirmDialog
+          isOpen={isConfirmClearOpen}
+          title="Kosongkan Seluruh Tugas"
+          message="Apakah Anda yakin ingin menghapus seluruh pohon tugas dari basis data Supabase? Semua tugas dan sub-tugas akan dihapus secara permanen dan tidak akan dimuat ulang saat halaman di-refresh."
+          confirmLabel="Ya, Kosongkan Semua"
+          cancelLabel="Batal"
+          isDestructive={true}
+          onConfirm={async () => {
+            setIsConfirmClearOpen(false);
+            await deleteAllTasks();
+          }}
+          onCancel={() => setIsConfirmClearOpen(false)}
+        />
       </div>
     </AppShell>
   );

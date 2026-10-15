@@ -101,16 +101,17 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
 
 export class TaskService {
   /**
-   * Mengambil semua tugas. Jika belum ada di Supabase, otomatis
-   * menginisialisasi tugas default batch sprint dengan valid UUIDs.
+   * Mengambil semua tugas dari Supabase.
+   * Tidak melakukan auto-seeding otomatis jika kosong, agar state kosong tetap persisten.
    */
   async getTasks(): Promise<TaskItem[]> {
-    const tasks = await taskRepository.getTasks();
-    if (tasks.length > 0) {
-      return tasks;
-    }
+    return await taskRepository.getTasks();
+  }
 
-    // Inisialisasi awal ke Supabase
+  /**
+   * Menginisialisasi tugas default batch sprint (eksplisit bila diinginkan pengguna).
+   */
+  async initializeDefaultTasks(): Promise<TaskItem[]> {
     const defaults = generateDefaultTasks();
     const created: TaskItem[] = [];
     for (const d of defaults) {
@@ -118,6 +119,13 @@ export class TaskService {
       created.push(row);
     }
     return created;
+  }
+
+  /**
+   * Mengosongkan seluruh tugas secara permanen dari Supabase.
+   */
+  async deleteAllTasks(): Promise<void> {
+    await taskRepository.deleteAllTasks();
   }
 
   /**
