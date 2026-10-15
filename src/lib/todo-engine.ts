@@ -16,9 +16,11 @@ export interface TaskItem {
   content_plan_id?: string | null;
   title: string;
   description?: string | null;
+  notes?: string | null;
   sort_order: number;
   is_completed: boolean;
   is_archived: boolean;
+  start_date?: string | null;
   due_date?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -264,3 +266,112 @@ export function cascadeReopenTask<T extends TaskItem>(tasks: T[], parentId: stri
     return t;
   });
 }
+
+// ==========================================
+// Task Scheduling & Date Status Helpers
+// ==========================================
+
+export type DueDateStatus = "overdue" | "due-today" | "upcoming" | "none";
+
+/**
+ * Mendapatkan representasi string tanggal lokal hari ini dalam format YYYY-MM-DD
+ * tanpa pergeseran zona waktu (timezone drift-free).
+ */
+export function getTodayLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Menghitung indikator status tenggat waktu berdasarkan due_date dan is_completed.
+ * Aturan:
+ * - overdue: due_date < today DAN tugas belum selesai
+ * - due-today: due_date === today DAN tugas belum selesai
+ * - upcoming: due_date > today
+ * - none: tidak ada due_date atau tugas telah selesai (tugas selesai tidak pernah overdue)
+ */
+export function getDueDateStatus(
+  dueDate?: string | null,
+  isCompleted: boolean = false,
+  referenceDate?: string
+): DueDateStatus {
+  if (!dueDate || !dueDate.trim()) return "none";
+  const cleanDueDate = dueDate.trim();
+  const today = referenceDate || getTodayLocalDateString();
+
+  if (isCompleted) {
+    // Tugas selesai tidak pernah diberi label overdue atau due-today
+    return cleanDueDate > today ? "upcoming" : "none";
+  }
+
+  if (cleanDueDate < today) {
+    return "overdue";
+  } else if (cleanDueDate === today) {
+    return "due-today";
+  } else {
+    return "upcoming";
+  }
+}
+
+/**
+ * Validasi konsistensi rentang tanggal (start_date <= due_date).
+ */
+export function validateTaskDates(
+  startDate?: string | null,
+  dueDate?: string | null
+): { isValid: boolean; errorMessage?: string } {
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (startDate && startDate.trim()) {
+    if (!dateRegex.test(startDate.trim())) {
+      return { isValid: false, errorMessage: "Format tanggal mulai harus YYYY-MM-DD." };
+    }
+  }
+
+  if (dueDate && dueDate.trim()) {
+    if (!dateRegex.test(dueDate.trim())) {
+      return { isValid: false, errorMessage: "Format batas waktu (due date) harus YYYY-MM-DD." };
+    }
+  }
+
+  if (startDate && startDate.trim() && dueDate && dueDate.trim()) {
+    if (startDate.trim() > dueDate.trim()) {
+      return {
+        isValid: false,
+        errorMessage: "Tanggal mulai tidak boleh melebihi batas waktu (due date).",
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Format string tanggal YYYY-MM-DD ke format tampilan Indonesia yang ramah (contoh: "15 Okt 2026").
+ */
+export function formatTaskDate(dateStr?: string | null): string {
+  if (!dateStr || !dateStr.trim()) return "";
+  const parts = dateStr.trim().split("-");
+  if (parts.length !== 3) return dateStr;
+
+  const year = parseInt(parts[0], 10);
+  const monthIndex = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+    "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+  ];
+
+  const monthName = months[monthIndex] || "";
+  const currentYear = new Date().getFullYear();
+
+  if (year === currentYear) {
+    return `${day} ${monthName}`;
+  }
+  return `${day} ${monthName} ${year}`;
+}
+

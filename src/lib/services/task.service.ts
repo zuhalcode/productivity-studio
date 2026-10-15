@@ -4,8 +4,16 @@ import {
   validateTaskMove,
   cascadeCompleteTask,
   cascadeReopenTask,
+  validateTaskDates,
 } from "@/lib/todo-engine";
 import { AppError } from "@/lib/supabase/errors";
+
+export interface CreateTaskOptions {
+  startDate?: string | null;
+  dueDate?: string | null;
+  notes?: string | null;
+  description?: string | null;
+}
 
 export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "updated_at">> {
   const sprintId = crypto.randomUUID();
@@ -19,9 +27,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Batch Sprint Minggu 1",
       description: "Sprint batch mingguan 3-3-1",
+      notes: null,
       sort_order: 1,
       is_completed: false,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
     {
@@ -31,9 +41,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Senin: Riset & Validasi 7 Topik",
       description: "Cari ide winning & hook di library",
+      notes: null,
       sort_order: 1,
       is_completed: true,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
     {
@@ -43,9 +55,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Selasa: Tulis 7 Naskah HTPC",
       description: "Tulis struktur 4 blok HTPC",
+      notes: null,
       sort_order: 2,
       is_completed: false,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
     {
@@ -55,9 +69,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Script Video #1 (Engagement)",
       description: null,
+      notes: null,
       sort_order: 1,
       is_completed: true,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
     {
@@ -67,9 +83,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Script Video #2 (Engagement)",
       description: null,
+      notes: null,
       sort_order: 2,
       is_completed: false,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
     {
@@ -79,9 +97,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Sabtu: Batch Syuting 7 Video",
       description: "Syuting maraton 2-3 jam",
+      notes: null,
       sort_order: 3,
       is_completed: false,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
     {
@@ -91,9 +111,11 @@ export function generateDefaultTasks(): Array<Omit<TaskItem, "created_at" | "upd
       content_plan_id: null,
       title: "Minggu: Editing & Penjadwalan",
       description: "Export dan jadwalkan di Meta Business Suite",
+      notes: null,
       sort_order: 4,
       is_completed: false,
       is_archived: false,
+      start_date: null,
       due_date: null,
     },
   ];
@@ -129,12 +151,13 @@ export class TaskService {
   }
 
   /**
-   * Menambahkan tugas baru (akar atau anak).
+   * Menambahkan tugas baru (akar atau anak) dengan opsi penjadwalan tanggal dan catatan.
    */
   async createTask(
     title: string,
     parentId: string | null = null,
-    currentTasks: TaskItem[] = []
+    currentTasks: TaskItem[] = [],
+    options: CreateTaskOptions = {}
   ): Promise<TaskItem> {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
@@ -148,16 +171,28 @@ export class TaskService {
       }
     }
 
+    // Validasi konsistensi rentang tanggal
+    const startDate = options.startDate ? options.startDate.trim() : null;
+    const dueDate = options.dueDate ? options.dueDate.trim() : null;
+    const dateValidation = validateTaskDates(startDate, dueDate);
+    if (!dateValidation.isValid) {
+      throw new AppError(dateValidation.errorMessage || "Rentang tanggal tidak valid.", "VALIDATION_ERROR");
+    }
+
+    const trimmedNotes = options.notes !== undefined && options.notes !== null ? options.notes.trim() || null : null;
+
     const newTask: Omit<TaskItem, "id" | "created_at" | "updated_at"> = {
       user_id: null,
       parent_id: parentId,
       content_plan_id: null,
       title: trimmedTitle,
-      description: null,
+      description: options.description || null,
+      notes: trimmedNotes,
       sort_order: currentTasks.filter((t) => t.parent_id === parentId).length + 1,
       is_completed: false,
       is_archived: false,
-      due_date: null,
+      start_date: startDate || null,
+      due_date: dueDate || null,
     };
 
     return await taskRepository.createTask({
@@ -167,8 +202,8 @@ export class TaskService {
   }
 
   /**
-   * Memperbarui informasi tugas (judul, deskripsi, urutan, dll.).
-   * Memvalidasi pencegahan siklus jika parent_id diubah.
+   * Memperbarui informasi tugas (judul, catatan, tanggal, urutan, dll.).
+   * Memvalidasi pencegahan siklus jika parent_id diubah serta validasi konsistensi tanggal.
    */
   async updateTask(
     id: string,
@@ -187,7 +222,24 @@ export class TaskService {
       }
     }
 
-    return await taskRepository.updateTask(id, updates);
+    // Validasi rentang tanggal jika start_date atau due_date diperbarui
+    if (updates.start_date !== undefined || updates.due_date !== undefined) {
+      const existing = currentTasks.find((t) => t.id === id);
+      const effectiveStart = updates.start_date !== undefined ? updates.start_date : existing?.start_date;
+      const effectiveDue = updates.due_date !== undefined ? updates.due_date : existing?.due_date;
+      const dateValidation = validateTaskDates(effectiveStart, effectiveDue);
+      if (!dateValidation.isValid) {
+        throw new AppError(dateValidation.errorMessage || "Rentang tanggal tidak valid.", "VALIDATION_ERROR");
+      }
+    }
+
+    // Normalisasi string catatan jika diperbarui
+    const normalizedUpdates = { ...updates };
+    if (normalizedUpdates.notes !== undefined && normalizedUpdates.notes !== null) {
+      normalizedUpdates.notes = normalizedUpdates.notes.trim() || null;
+    }
+
+    return await taskRepository.updateTask(id, normalizedUpdates);
   }
 
   /**

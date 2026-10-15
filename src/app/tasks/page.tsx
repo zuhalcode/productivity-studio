@@ -36,27 +36,28 @@ export default function BatchTasksPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)] shadow-xs">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
-              <CheckSquare className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
+              <CheckSquare className="w-3.5 h-3.5 shrink-0" />
               <span>Modul 4: Recursive Hierarchical Todo Engine</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-[var(--text-primary)]">
               Manajemen Pohon Tugas (Batch Production Sprint)
             </h1>
-            <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+            <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
               Dekomposisi tugas bersarang tanpa batas kedalaman semu. Disimpan secara persisten di Supabase dengan kalkulasi progres cabang rata-rata on-the-fly.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 pt-1 sm:pt-0">
             {isSaving && (
-              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 animate-in fade-in flex items-center gap-1.5 mr-2">
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 animate-in fade-in flex items-center gap-1.5 mr-1">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Menyimpan ke Supabase...</span>
+                <span className="hidden sm:inline">Menyimpan ke Supabase...</span>
+                <span className="sm:hidden">Menyimpan...</span>
               </span>
             )}
 
@@ -64,25 +65,25 @@ export default function BatchTasksPage() {
               <button
                 type="button"
                 onClick={() => setIsConfirmClearOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors min-h-[36px] sm:min-h-0"
                 title="Hapus seluruh tugas dari basis data Supabase"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5 shrink-0" />
                 <span>Kosongkan Semua</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={loadDefaultTasks}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition-colors min-h-[36px] sm:min-h-0"
                 title="Muat contoh batch sprint default"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
                 <span>Muat Template Sprint</span>
               </button>
             )}
 
-            <div className="px-3.5 py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-xs font-bold text-[var(--text-secondary)]">
+            <div className="px-3 py-2 sm:py-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-xs font-bold text-[var(--text-secondary)] shrink-0 min-h-[36px] sm:min-h-0 flex items-center">
               {tasks.length} Total Tugas
             </div>
           </div>

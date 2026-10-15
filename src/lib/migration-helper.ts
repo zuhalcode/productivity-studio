@@ -223,9 +223,11 @@ export async function migrateLocalDataToSupabase(): Promise<MigrationResult> {
           content_plan_id: null,
           title: t.title,
           description: t.description || null,
+          notes: t.notes || null,
           sort_order: t.sort_order || 0,
           is_completed: t.is_completed ?? false,
           is_archived: t.is_archived ?? false,
+          start_date: t.start_date || null,
           due_date: t.due_date || null,
           updated_at: new Date().toISOString(),
         });

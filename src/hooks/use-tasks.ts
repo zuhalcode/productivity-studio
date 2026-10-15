@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { taskService } from "@/lib/services/task.service";
+import { taskService, CreateTaskOptions } from "@/lib/services/task.service";
 import { TaskItem } from "@/types/database";
 import { TaskNode, buildTaskTree } from "@/lib/todo-engine";
 import { normalizeSupabaseError } from "@/lib/supabase/errors";
@@ -33,11 +33,15 @@ export function useTasks() {
   // Bangun struktur pohon on-the-fly secara reaktif
   const taskTree = useMemo(() => buildTaskTree(tasks), [tasks]);
 
-  const createTask = async (title: string, parentId: string | null = null): Promise<TaskItem> => {
+  const createTask = async (
+    title: string,
+    parentId: string | null = null,
+    options: CreateTaskOptions = {}
+  ): Promise<TaskItem> => {
     setIsSaving(true);
     setError(null);
     try {
-      const created = await taskService.createTask(title, parentId, tasks);
+      const created = await taskService.createTask(title, parentId, tasks, options);
       setTasks((prev) => [...prev, created]);
       return created;
     } catch (err: unknown) {

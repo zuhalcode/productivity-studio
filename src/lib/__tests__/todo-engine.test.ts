@@ -5,6 +5,10 @@ import {
   validateTaskMove,
   cascadeCompleteTask,
   cascadeReopenTask,
+  getDueDateStatus,
+  validateTaskDates,
+  formatTaskDate,
+  getTodayLocalDateString,
 } from "../todo-engine";
 
 describe("Recursive Hierarchical Todo Engine — Formal Acceptance Test Suite (T-01 s/d T-11)", () => {
@@ -391,4 +395,143 @@ describe("Recursive Hierarchical Todo Engine — Formal Acceptance Test Suite (T
     expect(tree[0].progress).toBe(0.0);
     expect(tree[0].effective_completed).toBe(false);
   });
+
+  // --------------------------------------------------------------------------
+  // T-12: Due Date Status Derivations
+  // --------------------------------------------------------------------------
+  describe("T-12: Due Date Status Derivations", () => {
+    const referenceDate = "2026-10-15";
+
+    it("Mengidentifikasi tugas belum selesai yang melewati tenggat sebagai 'overdue'", () => {
+      const status = getDueDateStatus("2026-10-14", false, referenceDate);
+      expect(status).toBe("overdue");
+    });
+
+    it("Mengidentifikasi tugas belum selesai yang jatuh tempo hari ini sebagai 'due-today'", () => {
+      const status = getDueDateStatus("2026-10-15", false, referenceDate);
+      expect(status).toBe("due-today");
+    });
+
+    it("Mengidentifikasi tugas dengan tenggat masa depan sebagai 'upcoming'", () => {
+      const status = getDueDateStatus("2026-10-20", false, referenceDate);
+      expect(status).toBe("upcoming");
+    });
+
+    it("Tugas tanpa due_date mengembalikan status 'none'", () => {
+      expect(getDueDateStatus(null, false, referenceDate)).toBe("none");
+      expect(getDueDateStatus("", false, referenceDate)).toBe("none");
+      expect(getDueDateStatus(undefined, false, referenceDate)).toBe("none");
+    });
+
+    it("Tugas yang sudah SELESAI tidak pernah berstatus 'overdue' meskipun tanggalnya terlewat", () => {
+      const status = getDueDateStatus("2026-10-10", true, referenceDate);
+      expect(status).not.toBe("overdue");
+      expect(status).toBe("none");
+    });
+
+    it("Tugas yang sudah SELESAI tidak pernah berstatus 'due-today'", () => {
+      const status = getDueDateStatus("2026-10-15", true, referenceDate);
+      expect(status).not.toBe("due-today");
+      expect(status).toBe("none");
+    });
+
+    it("Hanya start_date yang terlewat tanpa due_date tidak menjadikan tugas 'overdue'", () => {
+      // getDueDateStatus hanya memeriksa due_date
+      const status = getDueDateStatus(null, false, referenceDate);
+      expect(status).toBe("none");
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // T-13: Date Ordering & Format Validation
+  // --------------------------------------------------------------------------
+  describe("T-13: Date Ordering & Format Validation", () => {
+    it("Valid jika start_date <= due_date", () => {
+      expect(validateTaskDates("2026-10-10", "2026-10-15").isValid).toBe(true);
+      expect(validateTaskDates("2026-10-15", "2026-10-15").isValid).toBe(true);
+    });
+
+    it("Valid jika hanya start_date atau hanya due_date atau keduanya null", () => {
+      expect(validateTaskDates("2026-10-10", null).isValid).toBe(true);
+      expect(validateTaskDates(null, "2026-10-15").isValid).toBe(true);
+      expect(validateTaskDates(null, null).isValid).toBe(true);
+    });
+
+    it("Menolak jika start_date > due_date", () => {
+      const result = validateTaskDates("2026-10-20", "2026-10-15");
+      expect(result.isValid).toBe(false);
+      expect(result.errorMessage).toContain("Tanggal mulai tidak boleh melebihi batas waktu");
+    });
+
+    it("Menolak format tanggal selain YYYY-MM-DD", () => {
+      expect(validateTaskDates("15-10-2026", "2026-10-20").isValid).toBe(false);
+      expect(validateTaskDates("2026/10/10", "2026-10-20").isValid).toBe(false);
+      expect(validateTaskDates("2026-10-10", "invalid-date").isValid).toBe(false);
+    });
+
+    it("formatTaskDate memformat tanggal ke bahasa yang ramah", () => {
+      const formatted = formatTaskDate("2026-10-15");
+      expect(formatted).toContain("15 Okt");
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // T-14: Hierarchy & Mathematical Non-Interference
+  // --------------------------------------------------------------------------
+  describe("T-14: Hierarchy & Mathematical Non-Interference", () => {
+    it("Keberadaan start_date, due_date, dan notes tidak mengubah kalkulasi bobot pohon rekursif", () => {
+      const tasksWithMeta: TaskItem[] = [
+        {
+          id: "P1",
+          parent_id: null,
+          title: "Sprint Produksi Konten",
+          notes: "Catatan sprint mingguan batch produksi",
+          start_date: "2026-10-01",
+          due_date: "2026-10-31",
+          sort_order: 1,
+          is_completed: false,
+          is_archived: false,
+        },
+        {
+          id: "C1",
+          parent_id: "P1",
+          title: "Riset Hook",
+          notes: "Pilih 3 dari template",
+          start_date: "2026-10-01",
+          due_date: "2026-10-05",
+          sort_order: 1,
+          is_completed: true,
+          is_archived: false,
+        },
+        {
+          id: "C2",
+          parent_id: "P1",
+          title: "Tulis Naskah",
+          notes: null,
+          start_date: "2026-10-06",
+          due_date: "2026-10-10",
+          sort_order: 2,
+          is_completed: false,
+          is_archived: false,
+        },
+      ];
+
+      const tree = buildTaskTree(tasksWithMeta);
+      expect(tree).toHaveLength(1);
+      const root = tree[0];
+
+      // Progres harus tetap (100 + 0) / 2 = 50.00%
+      expect(root.progress).toBe(50.0);
+      expect(root.effective_completed).toBe(false);
+      expect(root.is_leaf).toBe(false);
+
+      // Metadata tanggal & catatan tetap terjaga pada node
+      expect(root.notes).toBe("Catatan sprint mingguan batch produksi");
+      expect(root.due_date).toBe("2026-10-31");
+      expect(root.children[0].notes).toBe("Pilih 3 dari template");
+      expect(root.children[0].start_date).toBe("2026-10-01");
+      expect(root.children[0].due_date).toBe("2026-10-05");
+    });
+  });
 });
+

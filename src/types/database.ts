@@ -177,9 +177,11 @@ export interface TaskRow {
   content_plan_id: string | null; // UUID
   title: string;
   description: string | null;
+  notes: string | null;
   sort_order: number;
   is_completed: boolean;
   is_archived: boolean;
+  start_date: string | null;
   due_date: string | null;
   created_at: string;
   updated_at: string;
