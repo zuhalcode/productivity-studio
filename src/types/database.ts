@@ -5,8 +5,10 @@
  */
 
 // ==========================================
-// 1. Niche Profile (Fondasi Ikigai & Value)
+// 1. Niche Profile & Ikigai Content Strategist
 // ==========================================
+export type StrategyStatus = "draft" | "completed" | "archived";
+
 export interface IkigaiData {
   love_topics: string[];
   skill_topics: string[];
@@ -14,18 +16,72 @@ export interface IkigaiData {
   monetizable: string[];
 }
 
+export interface CreatorContext {
+  platforms: string[]; // "Instagram" | "TikTok" | "YouTube Shorts" | "LinkedIn" | "Twitter/X"
+  target_audience: string;
+  primary_goal: string; // "Personal Branding" | "Digital Product" | "Client Acquisition" | "Monetization"
+  authority_notes?: string | null;
+}
+
+export interface NicheRecommendation {
+  niche_name: string;
+  rationalization: string;
+  sustainability_score: number; // 1-10 integer
+  market_demand_score: number;  // 1-10 integer
+  monetization_score: number;   // 1-10 integer
+  risk_factors: string;
+}
+
+export interface BestNicheRecommendation {
+  niche_name: string;
+  primary_reason: string;
+}
+
+export interface LaunchPillar {
+  pillar_name: "Otoritas" | "Koneksi" | "Konversi";
+  content_idea: string;
+  recommended_format: string;
+}
+
+export interface MonetizationRoadmapItem {
+  phase: string;
+  offering_type: string;
+  description: string;
+}
+
+export interface MarketAnalysis {
+  competitor_oversaturation: string[];
+  content_gaps: string[];
+  launch_pillars: LaunchPillar[];
+  monetization_roadmap: MonetizationRoadmapItem[];
+}
+
 export interface NicheProfileRow {
   id: string; // UUID
   user_id: string | null;
+  strategy_name?: string | null;
+  status?: StrategyStatus;
+
   ikigai_data: IkigaiData;
+  creator_context?: CreatorContext;
+  recommended_niches?: NicheRecommendation[] | null;
+  best_niche_recommendation?: BestNicheRecommendation | null;
+
   sweet_spot: string | null;
   niche_final: string;
   core_value: string;
+  value_statement?: string | null;
+  core_message?: string | null;
+
   bio_ig_a: string | null;
   bio_ig_b: string | null;
   bio_ig_c: string | null;
   bio_tiktok: string | null;
+  bio_tiktok_b?: string | null;
   tagline: string | null;
+
+  market_analysis?: MarketAnalysis;
+
   is_active: boolean;
   created_at: string;
   updated_at: string;
